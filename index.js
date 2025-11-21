@@ -35691,8 +35691,13 @@ const cityData = [
     },
   ];
   
- // --- Обработка множественного ввода городов ---
+ /// --- Обработка множественного ввода городов ---
 const cityInput = document.querySelector('.city-selector__input');
+
+function capitalize(text) {
+    if (!text) return text;
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+}
 
 function normalizeCityName(name) {
     const map = {
@@ -35702,16 +35707,27 @@ function normalizeCityName(name) {
         "питер": "Санкт-Петербург",
         "екб": "Екатеринбург",
     };
+
     const lower = name.trim().toLowerCase();
-    return map[lower] || name.trim();
+
+    // сначала автозамена, потом форматирование заглавной буквы
+    const normalized = map[lower] || name.trim();
+
+    return normalized
+        .split(" ")
+        .map(capitalize)
+        .join(" ");
 }
 
 function parseCities(text) {
-    return text
+    const list = text
         .split(/[\n,]+/)
         .map(c => normalizeCityName(c))
         .map(c => c.trim())
         .filter(c => c.length > 0);
+
+    // Убираем дубликаты
+    return [...new Set(list)];
 }
 
 const cityList = document.querySelector('.city-selector__list');
@@ -35739,10 +35755,13 @@ cityInput.addEventListener('input', () => {
             li.classList.add('city-selector__suggestion');
 
             li.addEventListener('click', () => {
-                if (!selectedCities.includes(city.name)) {
-                    selectedCities.push(city.name);
+                const normalized = normalizeCityName(city.name);
+
+                if (!selectedCities.includes(normalized)) {
+                    selectedCities.push(normalized);
                     updateResults();
                 }
+
                 cityInput.value = '';
                 cityList.innerHTML = '';
             });
@@ -35771,11 +35790,16 @@ function updateResults() {
     // Поддержка множественного ввода городов списком
     const manualCities = parseCities(cityInput.value);
 
-    manualCities.forEach(c => {
-        if (!selectedCities.includes(c)) {
-            selectedCities.push(c);
+    manualCities.forEach(city => {
+        const normalized = normalizeCityName(city);
+
+        if (!selectedCities.includes(normalized)) {
+            selectedCities.push(normalized);
         }
     });
+
+    // Удаляем дубликаты после всех обработок
+    selectedCities = [...new Set(selectedCities)];
 
     resultTable.innerHTML = '';
     let total = 0;
@@ -35821,3 +35845,4 @@ document.querySelector('.reset').addEventListener('click', () => {
     resultTable.innerHTML = '';
     totalOutput.textContent = '—';
 });
+
